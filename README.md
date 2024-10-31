@@ -1,73 +1,118 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="200" alt="Nest Logo" /></a>
-</p>
+# nest-twstock
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+[![NPM version][npm-image]][npm-url]
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://coveralls.io/github/nestjs/nest?branch=master" target="_blank"><img src="https://coveralls.io/repos/github/nestjs/nest/badge.svg?branch=master#9" alt="Coverage" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
-
-## Description
-
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+> A Nest module wrapper for [node-twstock](https://github.com/chunkai1312/node-twstock)
 
 ## Installation
 
-```bash
-$ npm install
-```
-
-## Running the app
+To begin using it, we first install the required dependencies.
 
 ```bash
-# development
-$ npm run start
-
-# watch mode
-$ npm run start:dev
-
-# production mode
-$ npm run start:prod
+$ npm install --save nest-twstock node-twstock
 ```
 
-## Test
+## Getting started
 
-```bash
-# unit tests
-$ npm run test
+Once the installation is complete, import the `TwStockModule` into your module and run the `register()` static method as shown below:
 
-# e2e tests
-$ npm run test:e2e
+```typescript
+import { Module } from '@nestjs/common';
+import { TwStockModule } from 'nest-twstock';
 
-# test coverage
-$ npm run test:cov
+@Module({
+  imports: [
+    TwStockModule.register(),
+  ],
+})
+export class CatsModule {}
 ```
 
-## Support
+Next, inject the `TwStock` instance using the `@InjectTwStock()` decorator.
 
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
+```typescript
+import { Injectable } from '@nestjs/common';
+import { InjectTwStock } from 'nest-twstock';
+import { TwStock } from 'node-twstock';
 
-## Stay in touch
+@Injectable()
+export class CatsService {
+  constructor(
+    @InjectTwStock() private readonly twstock: TwStock,
+  ) {}
 
-- Author - [Kamil Myśliwiec](https://kamilmysliwiec.com)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
+  async listStocks() {
+    return this.twstock.stocks.list();
+  }
+}
+```
+
+## Async configuration
+
+When you need to pass module options asynchronously instead of statically, use the `registerAsync()` method. As with most dynamic modules, Nest provides several techniques to deal with async configuration.
+
+One technique is to use a factory function:
+
+```typescript
+TwStockModule.registerAsync({
+  useFactory: () => ({
+    ttl: 5000,
+    limit: 1,
+  }),
+});
+```
+
+Like other factory providers, our factory function can be [async](https://docs.nestjs.com/fundamentals/custom-providers#factory-providers-usefactory) and can inject dependencies through `inject`.
+
+```typescript
+TwStockModule.registerAsync({
+  imports: [ConfigModule],
+  useFactory: async (configService: ConfigService) => ({
+    ttl: configService.get('TWSTOCK_TTL'),
+    limit: configService.get('TWSTOCK_LIMIT'),
+  }),
+  inject: [ConfigService],
+});
+```
+
+Alternatively, you can configure the `TwStockModule` using a class instead of a factory, as shown below.
+
+```typescript
+TwStockModule.registerAsync({
+  useClass: TwStockConfigService,
+});
+```
+
+The construction above instantiates `TwStockConfigService` inside `TwStockModule`, using it to create an options object. Note that in this example, the `TwStockConfigService` has to implement `TwStockOptionsFactory` interface as shown below. The `TwStockModule` will call the `createTwStockOptions()` method on the instantiated object of the supplied class.
+
+```typescript
+@Injectable()
+class TwStockConfigService implements TwStockOptionsFactory {
+  createTwStockOptions(): TwStockModuleOptions {
+    return {
+      ttl: 5000,
+      limit: 1,
+    };
+  }
+}
+```
+
+If you want to reuse an existing options provider instead of creating a private copy inside the `TwStockModule`, use the `useExisting` syntax.
+
+```typescript
+TwStockModule.registerAsync({
+  imports: [ConfigModule],
+  useExisting: TwStockConfigService,
+});
+```
+
+## Reference
+
+[node-twstock](https://github.com/chunkai1312/node-twstock)
 
 ## License
 
-Nest is [MIT licensed](LICENSE).
+[MIT](LICENSE)
+
+[npm-image]: https://img.shields.io/npm/v/nest-twstock.svg
+[npm-url]: https://npmjs.com/package/nest-twstock
