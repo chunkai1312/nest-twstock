@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.1](https://github.com/chunkai1312/nest-twstock/compare/v0.1.0...v0.1.1) (2024-11-04)
+
+
+### Bug Fixes
+
+* allow using default settings without specifying options ([87c84b5](https://github.com/chunkai1312/nest-twstock/commit/87c84b5e54cb76c32f0ae0f8f857c37090b24b46))
+
 # 0.1.0 (2024-10-31)
 
 
