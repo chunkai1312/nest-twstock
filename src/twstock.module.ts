@@ -5,7 +5,7 @@ import { TwStockModuleOptions, TwStockModuleAsyncOptions, TwStockOptionsFactory 
 
 @Module({})
 export class TwStockModule {
-  static register(options: TwStockModuleOptions): DynamicModule {
+  static register(options?: TwStockModuleOptions): DynamicModule {
     const providers = [
       ...createTwStockProviders(options),
       TwStockInstanceProvider,
@@ -17,7 +17,7 @@ export class TwStockModule {
     };
   }
 
-  static registerAsync(options: TwStockModuleAsyncOptions): DynamicModule {
+  static registerAsync(options?: TwStockModuleAsyncOptions): DynamicModule {
     const providers = [
       ...this.createAsyncProviders(options),
       TwStockInstanceProvider,
